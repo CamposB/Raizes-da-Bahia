@@ -1,0 +1,23 @@
+{
+  "name": "erp-raizes",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ERP Raízes da Bahia - gestão de vendas de tapioca",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "db:local": "node scripts/local-db.mjs",
+    "dev": "concurrently -k -n api,web -c auto \"npm run dev -w server\" \"npm run dev -w web\"",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "import": "npm run import -w server --",
+    "setup": "npm run migrate -w server && npm run seed -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

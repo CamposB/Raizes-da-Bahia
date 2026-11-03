@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.mysqldata
+*.log
+web/dev-dist
+.claude/
+*.xlsx
