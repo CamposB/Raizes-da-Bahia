@@ -14,6 +14,7 @@ import { lotsRouter } from './routes/lots.js';
 import { paymentsRouter, salesRouter } from './routes/sales.js';
 import { transactionsRouter } from './routes/transactions.js';
 import { dashboardRouter, settingsRouter } from './routes/dashboard.js';
+import { crmRouter } from './routes/crm.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -38,6 +39,7 @@ app.use('/api/payments', requireAuth, paymentsRouter);
 app.use('/api/transactions', requireAuth, transactionsRouter);
 app.use('/api/dashboard', requireAuth, dashboardRouter);
 app.use('/api/settings', requireAuth, settingsRouter);
+app.use('/api/crm', requireAuth, crmRouter);
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Rota não encontrada' }));
 
 // Em produção o mesmo servidor entrega o front-end (web/dist)

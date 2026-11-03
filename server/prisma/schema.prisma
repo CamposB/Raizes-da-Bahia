@@ -35,6 +35,7 @@ model User {
 
   sales        Sale[]
   transactions Transaction[]
+  contacts     ContactLog[]
 }
 
 model Customer {
@@ -44,13 +45,66 @@ model Customer {
   phone     String?
   notes     String? @db.Text
   active    Boolean  @default(true)
+  optOut    Boolean  @default(false) // não quer receber mensagens
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   sales        Sale[]
   transactions Transaction[]
+  contacts     ContactLog[]
 
   @@index([name])
+}
+
+// ---- CRM ----
+
+enum ContactChannel {
+  WHATSAPP
+  LIGACAO
+  PESSOALMENTE
+  OUTRO
+}
+
+// MANUAL: registrado por um usuário. Os demais são para o envio automático (futuro):
+// a automação cria QUEUED e o serviço de envio atualiza para SENT ou FAILED.
+enum ContactStatus {
+  MANUAL
+  QUEUED
+  SENT
+  FAILED
+}
+
+// Modelo de mensagem com variáveis: {nome}, {dias}, {ultima_compra}, {valor_aberto}, {preco}
+model MessageTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  body      String   @db.Text
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts ContactLog[]
+}
+
+// Histórico de contatos com o cliente (manuais hoje, automáticos no futuro)
+model ContactLog {
+  id          String          @id @default(cuid())
+  customerId  String
+  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  channel     ContactChannel  @default(WHATSAPP)
+  status      ContactStatus   @default(MANUAL)
+  templateId  String?
+  template    MessageTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  message     String?         @db.Text
+  notes       String?         @db.Text
+  error       String?         @db.Text // motivo de falha no envio automático
+  scheduledAt DateTime? // envio automático agendado
+  sentAt      DateTime        @default(now())
+  createdById String?
+  createdBy   User?           @relation(fields: [createdById], references: [id])
+
+  @@index([customerId, sentAt])
+  @@index([status, scheduledAt])
 }
 
 // Lote de goma comprado do fornecedor (ex.: LO-20260519)

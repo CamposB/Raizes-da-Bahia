@@ -11,6 +11,7 @@ const customerInput = z.object({
   phone: z.string().trim().nullish(),
   notes: z.string().nullish(),
   active: z.boolean().optional(),
+  optOut: z.boolean().optional(),
 });
 
 customersRouter.get('/', async (req, res) => {

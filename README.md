@@ -9,6 +9,7 @@ Sistema de gestão para a venda de tapioca (goma por kg). Substitui a planilha `
 | **Início** | Saldo em caixa, valor a receber, entregas pendentes, vendas do mês, gráfico mensal, lote atual, melhores clientes | Totais das colunas L/O e "TOTAL EM CAIXA" |
 | **Vendas** | Lançar, editar e filtrar vendas (entrega, pagamento, lote). Marcar como entregue com 1 toque | Aba *Vendas* e *Planilha1* |
 | **Clientes** | Cadastro, histórico, quanto cada um deve, cobrança pelo WhatsApp, juntar cadastros duplicados | Nomes soltos nas abas |
+| **CRM** | Quem está ativo, em risco ou sem comprar há X dias, mensagens prontas para o WhatsApp e histórico de contatos. Já preparado para envio automático (`server/src/messaging.ts`) | — |
 | **Lotes** | Cada compra de goma: kg vendidos, receita, custo e resultado | Coluna *Lote* |
 | **Financeiro** | Livro-caixa com entradas e saídas por categoria. Marca o que já foi transferido para o Nubank | Aba *Financeiro* |
 | **Usuários** | Login individual com perfil Administrador ou Operador | — |

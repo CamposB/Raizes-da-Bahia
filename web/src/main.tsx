@@ -13,6 +13,7 @@ import { CustomerDetailPage, CustomersPage } from './pages/Customers';
 import { LotsPage } from './pages/Lots';
 import { FinancePage } from './pages/Finance';
 import { SettingsPage, UsersPage } from './pages/Admin';
+import { CrmPage } from './pages/Crm';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } },
@@ -42,6 +43,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="vendas" element={<SalesPage />} />
                 <Route path="clientes" element={<CustomersPage />} />
                 <Route path="clientes/:id" element={<CustomerDetailPage />} />
+                <Route path="crm" element={<CrmPage />} />
                 <Route path="lotes" element={<LotsPage />} />
                 <Route path="financeiro" element={<FinancePage />} />
                 <Route path="usuarios" element={<AdminOnly><UsersPage /></AdminOnly>} />

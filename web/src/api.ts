@@ -45,7 +45,7 @@ export const qs = (params: Record<string, string | undefined | null>) => {
 export type Role = 'ADMIN' | 'OPERADOR';
 export interface User { id: string; name: string; email: string; role: Role; active?: boolean }
 export interface Customer {
-  id: string; name: string; group: string | null; phone: string | null; notes: string | null; active: boolean;
+  id: string; name: string; group: string | null; phone: string | null; notes: string | null; active: boolean; optOut?: boolean;
   salesCount?: number; totalKg?: number; totalSpent?: number; openBalance?: number; lastPurchase?: string | null;
 }
 export interface Lot {

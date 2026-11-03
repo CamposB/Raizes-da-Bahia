@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Boxes, Home, LogOut, Menu, Monitor, Moon, Plus, Settings, ShoppingBasket, Sun, Users, UserCog, Wallet } from 'lucide-react';
+import { Boxes, HeartHandshake, Home, LogOut, Menu, Monitor, Moon, Plus, Settings, ShoppingBasket, Sun, Users, UserCog, Wallet } from 'lucide-react';
 import { useAuth } from '../auth';
 import { useTheme, type ThemeMode } from '../theme';
 import { SaleFormModal } from './SaleForm';
@@ -35,6 +35,7 @@ const nav = [
   { to: '/', label: 'Início', icon: Home, end: true },
   { to: '/vendas', label: 'Vendas', icon: ShoppingBasket },
   { to: '/clientes', label: 'Clientes', icon: Users },
+  { to: '/crm', label: 'CRM', icon: HeartHandshake },
   { to: '/lotes', label: 'Lotes', icon: Boxes },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet },
 ];
@@ -101,7 +102,7 @@ export function Layout() {
         <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMore(false)}>
           <div className="absolute right-3 top-14 w-56 rounded-xl border border-stone-200 bg-surface p-2 shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="px-3 py-2 text-sm font-medium">{user?.name}</div>
-            {[nav[3], ...extra].map((n) => (
+            {[nav[3], nav[4], ...extra].map((n) => (
               <NavLink key={n.to} to={n.to} className={linkCls} onClick={() => setMore(false)}>
                 <n.icon size={18} /> {n.label}
               </NavLink>
@@ -130,7 +131,7 @@ export function Layout() {
             <Plus size={26} />
           </span>
         </button>
-        {[nav[2], nav[4]].map((n) => (
+        {[nav[2], nav[5]].map((n) => (
           <NavLink key={n.to} to={n.to} className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[11px] ${isActive ? 'text-brand-600' : 'text-stone-500'}`}>
             <n.icon size={22} /> {n.label}
           </NavLink>

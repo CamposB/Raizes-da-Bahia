@@ -31,14 +31,17 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 }
 
 const inputCls =
-  'w-full rounded-lg border border-stone-300 bg-surface px-3 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200';
+  'rounded-lg border border-stone-300 bg-surface px-3 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200';
 
-export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={cx(inputCls, p.className)} />;
+// largura total por padrão, a menos que o className já defina uma (ex.: w-auto)
+const fieldCls = (className?: string) => cx(inputCls, !/(^|\s)w-/.test(className ?? '') && 'w-full', className);
 
-export const Select = (p: SelectHTMLAttributes<HTMLSelectElement>) => <select {...p} className={cx(inputCls, p.className)} />;
+export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={fieldCls(p.className)} />;
 
-export const Textarea = (p: React.TextareaHTMLAttributes<HTMLTextAreaElement>) => (
-  <textarea rows={2} {...p} className={cx(inputCls, p.className)} />
+export const Select = (p: SelectHTMLAttributes<HTMLSelectElement>) => <select {...p} className={fieldCls(p.className)} />;
+
+export const Textarea = (p: React.ComponentProps<'textarea'>) => (
+  <textarea rows={2} {...p} className={fieldCls(p.className)} />
 );
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {

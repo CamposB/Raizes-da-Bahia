@@ -60,10 +60,10 @@ export function CustomersPage() {
 
 function CustomerFormModal({ open, onClose, customer }: { open: boolean; onClose: () => void; customer?: Customer }) {
   const invalidate = useInvalidateAll();
-  const [f, setF] = useState({ name: customer?.name ?? '', group: customer?.group ?? '', phone: customer?.phone ?? '', notes: customer?.notes ?? '' });
+  const [f, setF] = useState({ name: customer?.name ?? '', group: customer?.group ?? '', phone: customer?.phone ?? '', notes: customer?.notes ?? '', optOut: customer?.optOut ?? false });
   const save = useMutation({
     mutationFn: () => {
-      const body = { name: f.name, group: f.group || null, phone: f.phone || null, notes: f.notes || null };
+      const body = { name: f.name, group: f.group || null, phone: f.phone || null, notes: f.notes || null, optOut: f.optOut };
       return customer ? api(`/customers/${customer.id}`, { method: 'PATCH', body }) : api('/customers', { body });
     },
     onSuccess: () => { invalidate(); onClose(); },
@@ -76,6 +76,9 @@ function CustomerFormModal({ open, onClose, customer }: { open: boolean; onClose
         <Field label="Grupo / origem" hint="Ex.: PWI, Brejas, Encanto"><Input value={f.group} onChange={(e) => setF({ ...f, group: e.target.value })} /></Field>
         <Field label="WhatsApp"><Input type="tel" inputMode="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="(11) 99999-9999" /></Field>
         <Field label="Observações"><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={f.optOut} onChange={(e) => setF({ ...f, optOut: e.target.checked })} className="h-4 w-4 accent-brand-600" /> Não quer receber mensagens (CRM)
+        </label>
         <ErrorMsg error={save.error} />
         <Button type="submit" className="w-full" disabled={save.isPending}>Salvar</Button>
       </form>
