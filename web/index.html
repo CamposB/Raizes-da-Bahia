@@ -10,6 +10,14 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Raízes da Bahia</title>
+    <script>
+      // aplica o tema antes de pintar a tela (evita piscar branco no modo escuro)
+      try {
+        var t = localStorage.getItem('raizes.theme');
+        if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches))
+          document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

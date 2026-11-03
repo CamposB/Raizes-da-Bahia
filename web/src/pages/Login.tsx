@@ -24,7 +24,7 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-brand-100 to-brand-50 px-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border border-stone-200 bg-surface p-6 shadow-sm">
         <div className="mb-2 flex flex-col items-center text-center">
           <img src="/icon.svg" alt="" className="mb-3 h-16 w-16" />
           <h1 className="text-xl font-semibold text-brand-700">Raízes da Bahia</h1>

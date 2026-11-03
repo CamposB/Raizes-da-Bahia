@@ -28,7 +28,7 @@ export function CustomerPicker({ value, onChange }: { value: { id?: string; name
         required
       />
       {open && (matches.length > 0 || (term && !exact)) && (
-        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-stone-200 bg-white shadow-lg">
+        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-stone-200 bg-surface shadow-lg">
           {matches.map((c) => (
             <button
               type="button"

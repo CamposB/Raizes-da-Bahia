@@ -44,12 +44,12 @@ export function DashboardPage() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={series} margin={{ left: -10, right: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e7e5e4" />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#78716c' }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#78716c' }} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(v, name) => [name === 'kg' ? kgFmt(Number(v)) : money(Number(v)), name === 'sales' ? 'Vendido' : name === 'expense' ? 'Despesas' : 'Kg']} cursor={{ fill: '#f5f5f4' }} />
-                <Bar dataKey="sales" fill="#9a3412" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expense" fill="#f1d3ac" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-stone-200)" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--color-stone-500)' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--color-stone-500)' }} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v, name) => [name === 'kg' ? kgFmt(Number(v)) : money(Number(v)), name === 'sales' ? 'Vendido' : name === 'expense' ? 'Despesas' : 'Kg']} cursor={{ fill: 'var(--color-stone-100)' }} contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-stone-200)', borderRadius: 8 }} labelStyle={{ color: 'var(--color-stone-800)' }} />
+                <Bar dataKey="sales" fill="var(--color-brand-600)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" fill="var(--color-brand-200)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

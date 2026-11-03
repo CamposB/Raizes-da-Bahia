@@ -1,6 +1,10 @@
 @import 'tailwindcss';
 
+/* modo escuro controlado pela classe .dark no <html> (ver theme.ts) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
+  --color-surface: #ffffff; /* fundo de cartões, modais e menus */
   --color-brand-50: #fdf8f1;
   --color-brand-100: #f9ecdb;
   --color-brand-200: #f1d3ac;
@@ -11,10 +15,52 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
+/*
+ * Modo escuro: as escalas de cor são "invertidas" — tons claros (fundos) viram
+ * escuros e tons fortes (textos) ficam mais claros. Assim os componentes usam as
+ * mesmas classes nos dois temas.
+ */
+.dark {
+  color-scheme: dark;
+  --color-surface: #1c1917;
+
+  --color-stone-50: #23201e;
+  --color-stone-100: #2c2826;
+  --color-stone-200: #36312e;
+  --color-stone-300: #4a4440;
+  --color-stone-400: #7a726c;
+  --color-stone-500: #a8a29e;
+  --color-stone-600: #c4bfbb;
+  --color-stone-700: #d6d3d1;
+  --color-stone-800: #e7e5e4;
+
+  --color-brand-50: #120e0c;
+  --color-brand-100: #3b1c0f;
+  --color-brand-200: #6b3216;
+  --color-brand-500: #f97316;
+  --color-brand-600: #c2410c;
+  --color-brand-700: #fb923c;
+  --color-leaf-600: #a3e635;
+
+  --color-red-50: #3a1414;
+  --color-red-100: #4c1818;
+  --color-red-500: #f87171;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+  --color-red-800: #fecaca;
+  --color-green-100: #14361f;
+  --color-green-800: #bbf7d0;
+  --color-amber-100: #3d2a0a;
+  --color-amber-600: #fbbf24;
+  --color-amber-800: #fde68a;
+  --color-sky-100: #0c2d40;
+  --color-sky-800: #bae6fd;
+}
+
 html,
 body {
   background: var(--color-brand-50);
-  color: #292524;
+  color: var(--color-stone-800);
   -webkit-tap-highlight-color: transparent;
 }
 

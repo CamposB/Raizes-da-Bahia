@@ -11,7 +11,7 @@ export function Button({ variant = 'primary', className, ...p }: ButtonHTMLAttri
       className={cx(
         'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition disabled:opacity-50',
         variant === 'primary' && 'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-700',
-        variant === 'secondary' && 'border border-stone-300 bg-white text-stone-700 hover:bg-stone-50',
+        variant === 'secondary' && 'border border-stone-300 bg-surface text-stone-700 hover:bg-stone-50',
         variant === 'ghost' && 'text-stone-600 hover:bg-stone-100',
         variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700',
         className,
@@ -31,7 +31,7 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 }
 
 const inputCls =
-  'w-full rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200';
+  'w-full rounded-lg border border-stone-300 bg-surface px-3 py-2 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200';
 
 export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={cx(inputCls, p.className)} />;
 
@@ -42,7 +42,7 @@ export const Textarea = (p: React.TextareaHTMLAttributes<HTMLTextAreaElement>) =
 );
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx('rounded-xl border border-stone-200 bg-white shadow-sm', className)}>{children}</div>;
+  return <div className={cx('rounded-xl border border-stone-200 bg-surface shadow-sm', className)}>{children}</div>;
 }
 
 export function Stat({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: ReactNode; tone?: 'good' | 'warn' | 'bad' }) {
@@ -104,7 +104,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 md:items-center md:p-4" onClick={onClose}>
       <div
-        className={cx('max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl md:rounded-2xl pb-safe', wide ? 'md:max-w-2xl' : 'md:max-w-md')}
+        className={cx('max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-surface p-5 shadow-xl md:rounded-2xl pb-safe', wide ? 'md:max-w-2xl' : 'md:max-w-md')}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -134,7 +134,7 @@ export const ErrorMsg = ({ error }: { error: unknown }) =>
 
 export function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { value: T; label: string }[] }) {
   return (
-    <div className="inline-flex rounded-lg border border-stone-300 bg-white p-0.5 text-sm">
+    <div className="inline-flex rounded-lg border border-stone-300 bg-surface p-0.5 text-sm">
       {options.map((o) => (
         <button
           key={o.value}
