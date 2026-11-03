@@ -6,3 +6,5 @@ dist
 web/dev-dist
 .claude/
 *.xlsx
+.env.*
+!.env.example

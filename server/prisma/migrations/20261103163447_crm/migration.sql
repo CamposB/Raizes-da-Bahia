@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `customer` ADD COLUMN `optOut` BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE `Customer` ADD COLUMN `optOut` BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateTable
 CREATE TABLE `MessageTemplate` (

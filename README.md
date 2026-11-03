@@ -132,4 +132,4 @@ web/               front-end React (PWA)
 scripts/           banco MySQL local e geração de ícones
 ```
 
-Para mudar o banco: edite `server/prisma/schema.prisma` e rode `npm run migrate:new -w server`.
+Para mudar o banco: edite `server/prisma/schema.prisma` e rode `npm run migrate:new -w server -- nome_da_mudanca`. O script corrige maiúsculas/minúsculas nos nomes de tabela (o MySQL do Windows grava tudo em minúsculo e o do Linux diferencia). Para aplicar em produção: `npm run migrate -w server` com a `DATABASE_URL` de produção.
