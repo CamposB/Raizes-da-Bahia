@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:prod": "tsx watch --env-file=.env.production src/index.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
     "start": "prisma migrate deploy && node dist/index.js",
     "migrate": "prisma migrate deploy",

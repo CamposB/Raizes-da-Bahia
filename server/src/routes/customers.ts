@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { num, prisma, round2 } from '../db.js';
-import { paymentInfo } from '../services.js';
+import { paymentInfo, sumQty } from '../services.js';
 
 export const customersRouter = Router();
 
@@ -20,16 +20,18 @@ customersRouter.get('/', async (req, res) => {
     where: q
       ? { OR: [{ name: { contains: q } }, { group: { contains: q } }] }
       : undefined,
-    include: { sales: { include: { payments: true } } },
+    include: { sales: { include: { payments: true, product: { select: { unit: true } } } } },
     orderBy: { name: 'asc' },
   });
   res.json(
     customers.map(({ sales, ...c }) => {
       const valid = sales.filter((s) => s.deliveryStatus !== 'CANCELADO');
+      const qty = sumQty(valid);
       return {
         ...c,
         salesCount: valid.length,
-        totalKg: round2(valid.reduce((s, x) => s + num(x.quantityKg), 0)),
+        totalKg: qty.kg,
+        totalUn: qty.un,
         totalSpent: round2(valid.reduce((s, x) => s + num(x.total), 0)),
         openBalance: round2(valid.reduce((s, x) => s + paymentInfo(x).open, 0)),
         lastPurchase: valid.reduce<Date | null>((d, x) => (!d || x.date > d ? x.date : d), null),
@@ -47,7 +49,7 @@ customersRouter.get('/:id', async (req, res) => {
   const c = await prisma.customer.findUniqueOrThrow({
     where: { id: req.params.id },
     include: {
-      sales: { include: { payments: true, lot: { select: { code: true } } }, orderBy: { date: 'desc' } },
+      sales: { include: { payments: true, product: { select: { id: true, name: true, unit: true } }, lot: { select: { code: true } } }, orderBy: { date: 'desc' } },
       transactions: { orderBy: { date: 'desc' } },
     },
   });

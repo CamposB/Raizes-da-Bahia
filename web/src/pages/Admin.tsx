@@ -1,9 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
-import { api, type User } from '../api';
+import { api, type Product, type ProductUnit, type User } from '../api';
+import { money } from '../format';
 import { useAuth } from '../auth';
-import { Badge, Button, Card, ErrorMsg, Field, Input, Modal, PageHeader, Select, Spinner } from '../components/ui';
+import { Badge, Button, Card, ErrorMsg, Field, Input, Modal, PageHeader, Segmented, Select, Spinner } from '../components/ui';
 import { useInvalidateAll } from '../components/SaleForm';
 
 export function UsersPage() {
@@ -77,12 +79,6 @@ function UserFormModal({ user, onClose }: { user?: User; onClose: () => void }) 
 
 export function SettingsPage() {
   const { user } = useAuth();
-  const invalidate = useInvalidateAll();
-  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api<Record<string, string>>('/settings') });
-  const [price, setPrice] = useState('');
-  useEffect(() => { if (settings) setPrice(settings.pricePerKg); }, [settings]);
-  const saveSettings = useMutation({ mutationFn: () => api('/settings', { method: 'PUT', body: { pricePerKg: price } }), onSuccess: invalidate });
-
   const [pw, setPw] = useState({ current: '', next: '' });
   const changePw = useMutation({ mutationFn: () => api('/auth/change-password', { body: pw }), onSuccess: () => setPw({ current: '', next: '' }) });
 
@@ -91,12 +87,10 @@ export function SettingsPage() {
       <PageHeader title="Configurações" />
       {user?.role === 'ADMIN' && (
         <Card className="p-4">
-          <h2 className="mb-3 font-semibold">Vendas</h2>
-          <form onSubmit={(e) => { e.preventDefault(); saveSettings.mutate(); }} className="flex items-end gap-2">
-            <Field label="Preço padrão por kg (R$)"><Input type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} /></Field>
-            <Button type="submit" disabled={saveSettings.isPending}>Salvar</Button>
-          </form>
-          {saveSettings.isSuccess && <p className="mt-2 text-sm text-leaf-600">Salvo!</p>}
+          <h2 className="mb-1 font-semibold">Preços</h2>
+          <p className="text-sm text-stone-600">
+            Os preços ficam no cadastro de cada produto. <Link to="/produtos" className="font-medium text-brand-700">Ir para Produtos →</Link>
+          </p>
         </Card>
       )}
       <Card className="p-4">
@@ -115,5 +109,85 @@ export function SettingsPage() {
         <p className="mt-1"><b>Android:</b> abra no Chrome → menu ⋮ → “Instalar app”.</p>
       </Card>
     </div>
+  );
+}
+
+export function ProductsPage() {
+  const { data = [], isLoading } = useQuery({ queryKey: ['products'], queryFn: () => api<Product[]>('/products') });
+  const [editing, setEditing] = useState<Product | null | undefined>();
+  return (
+    <div>
+      <PageHeader title="Produtos" actions={<Button onClick={() => setEditing(null)}><Plus size={18} /> Novo produto</Button>} />
+      {isLoading ? <Spinner /> : (
+        <Card>
+          <ul className="divide-y divide-stone-100">
+            {data.map((p) => (
+              <li key={p.id} className={`flex items-center justify-between gap-3 px-4 py-3 ${p.active ? '' : 'opacity-60'}`}>
+                <div className="min-w-0">
+                  <div className="font-medium">{p.name}</div>
+                  <div className="text-sm text-stone-500">
+                    {money(p.price)} por {p.unit === 'KG' ? 'kg' : 'unidade'} · {p.salesCount ?? 0} venda(s){p.usesLots ? ' · usa lotes' : ''}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!p.active && <Badge tone="red">Inativo</Badge>}
+                  <Button variant="ghost" onClick={() => setEditing(p)}>Editar</Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      <p className="mt-3 text-sm text-stone-500">O primeiro produto ativo da lista já vem selecionado na nova venda. Produto com vendas não pode ser apagado, só desativado.</p>
+      {editing !== undefined && <ProductFormModal product={editing ?? undefined} onClose={() => setEditing(undefined)} />}
+    </div>
+  );
+}
+
+function ProductFormModal({ product, onClose }: { product?: Product; onClose: () => void }) {
+  const invalidate = useInvalidateAll();
+  const [f, setF] = useState({
+    name: product?.name ?? '',
+    unit: product?.unit ?? ('UN' as ProductUnit),
+    price: product?.price.toString() ?? '',
+    usesLots: product?.usesLots ?? false,
+    active: product?.active ?? true,
+    sortOrder: product?.sortOrder.toString() ?? '0',
+  });
+  const save = useMutation({
+    mutationFn: () => {
+      const body = { ...f, price: Number(f.price), sortOrder: Number(f.sortOrder) || 0 };
+      return product ? api(`/products/${product.id}`, { method: 'PATCH', body }) : api('/products', { body });
+    },
+    onSuccess: () => { invalidate(); onClose(); },
+  });
+  const submit = (e: FormEvent) => { e.preventDefault(); save.mutate(); };
+  return (
+    <Modal open onClose={onClose} title={product ? 'Editar produto' : 'Novo produto'}>
+      <form onSubmit={submit} className="space-y-3">
+        <Field label="Nome"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Ex.: Provolone 300 g" required /></Field>
+        <Field label="Vendido por">
+          <Segmented value={f.unit} onChange={(unit) => setF({ ...f, unit })} options={[{ value: 'UN', label: 'Unidade' }, { value: 'KG', label: 'Quilo (kg)' }]} />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={`Preço por ${f.unit === 'KG' ? 'kg' : 'unidade'} (R$)`}>
+            <Input type="number" step="0.01" min="0" inputMode="decimal" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} required />
+          </Field>
+          <Field label="Ordem" hint="Menor aparece primeiro">
+            <Input type="number" step="1" value={f.sortOrder} onChange={(e) => setF({ ...f, sortOrder: e.target.value })} />
+          </Field>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={f.usesLots} onChange={(e) => setF({ ...f, usesLots: e.target.checked })} className="h-4 w-4 accent-brand-600" /> Vendas ligadas a um lote (como a goma)
+        </label>
+        {product && (
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} className="h-4 w-4 accent-brand-600" /> Ativo (aparece na nova venda)
+          </label>
+        )}
+        <ErrorMsg error={save.error} />
+        <Button type="submit" className="w-full" disabled={save.isPending}>Salvar</Button>
+      </form>
+    </Modal>
   );
 }

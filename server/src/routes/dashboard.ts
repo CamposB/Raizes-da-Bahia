@@ -1,18 +1,31 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
 import { num, prisma, round2 } from '../db.js';
 import { requireAdmin } from '../auth.js';
-import { paymentInfo } from '../services.js';
+import { paymentInfo, sumQty } from '../services.js';
 
 export const dashboardRouter = Router();
 
 const monthKey = (d: Date) => d.toISOString().slice(0, 7);
 
+/** Quantidade e valor vendidos de cada produto. */
+function byProduct(sales: { quantity: Prisma.Decimal; total: Prisma.Decimal; product: { id: string; name: string; unit: string } }[]) {
+  const map = new Map<string, { id: string; name: string; unit: string; quantity: number; total: number }>();
+  for (const s of sales) {
+    const p = map.get(s.product.id) ?? { ...s.product, quantity: 0, total: 0 };
+    p.quantity += num(s.quantity);
+    p.total += num(s.total);
+    map.set(p.id, p);
+  }
+  return [...map.values()].sort((a, b) => b.total - a.total).map((p) => ({ ...p, quantity: round2(p.quantity), total: round2(p.total) }));
+}
+
 dashboardRouter.get('/', async (_req, res) => {
   const [sales, txs, lots] = await Promise.all([
     prisma.sale.findMany({
       where: { deliveryStatus: { not: 'CANCELADO' } },
-      include: { payments: true, customer: { select: { id: true, name: true } } },
+      include: { payments: true, customer: { select: { id: true, name: true } }, product: { select: { id: true, name: true, unit: true } } },
     }),
     prisma.transaction.findMany(),
     prisma.lot.findMany({ where: { closed: false }, orderBy: { purchaseDate: 'desc' }, take: 1 }),
@@ -44,7 +57,7 @@ dashboardRouter.get('/', async (_req, res) => {
     const mt = txs.filter((t) => monthKey(t.date) === m);
     return {
       month: m,
-      kg: round2(ms.reduce((s, x) => s + num(x.quantityKg), 0)),
+      kg: sumQty(ms).kg,
       sales: round2(ms.reduce((s, x) => s + num(x.total), 0)),
       income: round2(mt.filter((t) => t.type === 'ENTRADA').reduce((s, t) => s + num(t.amount), 0)),
       expense: round2(mt.filter((t) => t.type === 'SAIDA').reduce((s, t) => s + num(t.amount), 0)),
@@ -54,7 +67,7 @@ dashboardRouter.get('/', async (_req, res) => {
   const byCustomer = new Map<string, { id: string; name: string; kg: number; total: number }>();
   for (const s of withPay) {
     const c = byCustomer.get(s.customerId) ?? { id: s.customer.id, name: s.customer.name, kg: 0, total: 0 };
-    c.kg += num(s.quantityKg);
+    if (s.product.unit === 'KG') c.kg += num(s.quantity);
     c.total += num(s.total);
     byCustomer.set(s.customerId, c);
   }
@@ -67,7 +80,7 @@ dashboardRouter.get('/', async (_req, res) => {
   if (lots[0]) {
     const ls = withPay.filter((s) => s.lotId === lots[0].id);
     const cost = txs.filter((t) => t.lotId === lots[0].id && t.type === 'SAIDA').reduce((s, t) => s + num(t.amount), 0);
-    const soldKg = ls.reduce((s, x) => s + num(x.quantityKg), 0);
+    const soldKg = sumQty(ls).kg;
     currentLot = {
       id: lots[0].id,
       code: lots[0].code,
@@ -86,16 +99,17 @@ dashboardRouter.get('/', async (_req, res) => {
     receivable: { count: receivable.length, total: round2(receivable.reduce((s, x) => s + x.open, 0)) },
     pendingDelivery: {
       count: pending.length,
-      kg: round2(pending.reduce((s, x) => s + num(x.quantityKg), 0)),
+      ...sumQty(pending),
       total: round2(pending.reduce((s, x) => s + num(x.total), 0)),
     },
     month: {
       count: monthSales.length,
-      kg: round2(monthSales.reduce((s, x) => s + num(x.quantityKg), 0)),
+      ...sumQty(monthSales),
+      byProduct: byProduct(monthSales),
       total: round2(monthSales.reduce((s, x) => s + num(x.total), 0)),
     },
     totals: {
-      kg: round2(withPay.reduce((s, x) => s + num(x.quantityKg), 0)),
+      ...sumQty(withPay),
       sales: round2(withPay.reduce((s, x) => s + num(x.total), 0)),
       customers: byCustomer.size,
     },
@@ -108,7 +122,8 @@ dashboardRouter.get('/', async (_req, res) => {
 // ---- Configurações ----
 export const settingsRouter = Router();
 
-const DEFAULTS: Record<string, string> = { pricePerKg: '21', companyName: 'Raízes da Bahia' };
+// o preço agora fica no cadastro de produtos
+const DEFAULTS: Record<string, string> = { companyName: 'Raízes da Bahia' };
 
 settingsRouter.get('/', async (_req, res) => {
   const rows = await prisma.setting.findMany();

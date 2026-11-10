@@ -20,7 +20,7 @@ export const TEMPLATE_VARIABLES: { key: keyof TemplateVars; label: string }[] = 
   { key: 'dias', label: 'Dias sem comprar' },
   { key: 'ultima_compra', label: 'Data da última compra' },
   { key: 'valor_aberto', label: 'Valor em aberto (R$)' },
-  { key: 'preco', label: 'Preço atual do kg (R$)' },
+  { key: 'preco', label: 'Preço da goma (1º produto do cadastro)' },
 ];
 
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

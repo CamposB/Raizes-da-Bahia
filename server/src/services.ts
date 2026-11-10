@@ -56,3 +56,16 @@ export const CATEGORIES = {
   ENTRADA: ['Venda', 'Ajuste', 'Aporte', 'Outros'],
   SAIDA: ['Compra de lote', 'Embalagem', 'Equipamento', 'Transporte', 'Site/Marketing', 'Ajuste', 'Outros'],
 };
+
+/** Produto padrão: o primeiro ativo da lista (usado quando a venda não informa o produto). */
+export async function defaultProduct(db: Tx | typeof prisma = prisma) {
+  return db.product.findFirstOrThrow({ where: { active: true }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+}
+
+/** Soma as quantidades separando kg de unidades (produtos diferentes não se somam). */
+export function sumQty(sales: { quantity: Prisma.Decimal | number; product: { unit: string } }[]) {
+  let kg = 0;
+  let un = 0;
+  for (const s of sales) s.product.unit === 'KG' ? (kg += num(s.quantity)) : (un += num(s.quantity));
+  return { kg: round2(kg), un: round2(un) };
+}

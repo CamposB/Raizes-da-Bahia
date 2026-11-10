@@ -10,6 +10,7 @@
   "scripts": {
     "db:local": "node scripts/local-db.mjs",
     "dev": "concurrently -k -n api,web -c auto \"npm run dev -w server\" \"npm run dev -w web\"",
+    "dev:prod": "concurrently -k -n api,web -c auto \"npm run dev:prod -w server\" \"npm run dev -w web\"",
     "dev:server": "npm run dev -w server",
     "dev:web": "npm run dev -w web",
     "build": "npm run build -w web && npm run build -w server",

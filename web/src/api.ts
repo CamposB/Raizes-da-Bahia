@@ -46,18 +46,23 @@ export type Role = 'ADMIN' | 'OPERADOR';
 export interface User { id: string; name: string; email: string; role: Role; active?: boolean }
 export interface Customer {
   id: string; name: string; group: string | null; phone: string | null; notes: string | null; active: boolean; optOut?: boolean;
-  salesCount?: number; totalKg?: number; totalSpent?: number; openBalance?: number; lastPurchase?: string | null;
+  salesCount?: number; totalKg?: number; totalUn?: number; totalSpent?: number; openBalance?: number; lastPurchase?: string | null;
 }
 export interface Lot {
   id: string; code: string; purchaseDate: string; quantityKg: number | null; supplier: string | null; notes: string | null;
   closed: boolean; soldKg: number; deliveredKg: number; pendingKg: number; availableKg: number | null;
   revenue: number; cost: number; profit: number; salesCount: number;
 }
+export type ProductUnit = 'KG' | 'UN';
+export interface Product {
+  id: string; name: string; unit: ProductUnit; price: number; usesLots: boolean; active: boolean; sortOrder: number; salesCount?: number;
+}
 export type DeliveryStatus = 'PENDENTE' | 'ENTREGUE' | 'CANCELADO';
 export type PaymentStatus = 'PAGO' | 'PARCIAL' | 'ABERTO' | 'NA';
 export interface Sale {
   id: string; number: number; date: string; customerId: string; customer: { id: string; name: string; group: string | null };
-  quantityKg: number; unitPrice: number; total: number; deliveryStatus: DeliveryStatus; deliveredAt: string | null;
+  productId: string; product: { id: string; name: string; unit: ProductUnit };
+  quantity: number; unitPrice: number; total: number; deliveryStatus: DeliveryStatus; deliveredAt: string | null;
   lotId: string | null; lot: { id: string; code: string } | null; notes: string | null; legacyCode: string | null;
   paid: number; open: number; paymentStatus: PaymentStatus;
   payments: { amount: number; transaction: { id: string; number: number; date: string; paymentMethod: string | null } }[];

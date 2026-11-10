@@ -2,15 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../api';
-import { kgFmt, money, monthFmt } from '../format';
+import { kgFmt, money, monthFmt, qtyFmt, qtySum } from '../format';
 import { Card, PageHeader, Spinner, Stat } from '../components/ui';
 
 interface Dash {
   cash: number; income: number; expense: number; notTransferred: number;
   receivable: { count: number; total: number };
-  pendingDelivery: { count: number; kg: number; total: number };
-  month: { count: number; kg: number; total: number };
-  totals: { kg: number; sales: number; customers: number };
+  pendingDelivery: { count: number; kg: number; un: number; total: number };
+  month: { count: number; kg: number; un: number; total: number; byProduct: { id: string; name: string; unit: 'KG' | 'UN'; quantity: number; total: number }[] };
+  totals: { kg: number; un: number; sales: number; customers: number };
   series: { month: string; kg: number; sales: number; income: number; expense: number }[];
   topCustomers: { id: string; name: string; kg: number; total: number }[];
   currentLot: { id: string; code: string; quantityKg: number | null; soldKg: number; revenue: number; cost: number } | null;
@@ -30,16 +30,27 @@ export function DashboardPage() {
           <Stat label="A receber" value={money(data.receivable.total)} sub={`${data.receivable.count} venda(s)`} tone={data.receivable.total ? 'bad' : undefined} />
         </Link>
         <Link to="/vendas?status=PENDENTE">
-          <Stat label="Entregas pendentes" value={kgFmt(data.pendingDelivery.kg)} sub={`${data.pendingDelivery.count} pedido(s) · ${money(data.pendingDelivery.total)}`} tone={data.pendingDelivery.count ? 'warn' : undefined} />
+          <Stat label="Entregas pendentes" value={qtySum(data.pendingDelivery)} sub={`${data.pendingDelivery.count} pedido(s) · ${money(data.pendingDelivery.total)}`} tone={data.pendingDelivery.count ? 'warn' : undefined} />
         </Link>
-        <Stat label="Vendas no mês" value={money(data.month.total)} sub={`${kgFmt(data.month.kg)} · ${data.month.count} venda(s)`} />
+        <Stat
+          label="Vendas no mês"
+          value={money(data.month.total)}
+          sub={
+            <>
+              {data.month.count} venda(s)
+              {data.month.byProduct.map((p) => (
+                <span key={p.id} className="block truncate text-xs">{qtyFmt(p.quantity, p.unit)} · {p.name}</span>
+              ))}
+            </>
+          }
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="p-4 lg:col-span-2">
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="font-semibold">Vendas por mês</h2>
-            <span className="text-sm text-stone-500">{kgFmt(data.totals.kg)} vendidos no total</span>
+            <span className="text-sm text-stone-500">{qtySum(data.totals)} vendidos no total</span>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">

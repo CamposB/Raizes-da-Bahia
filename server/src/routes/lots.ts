@@ -20,8 +20,8 @@ async function lotsWithStats(where?: { id: string }) {
     orderBy: { purchaseDate: 'desc' },
   });
   return lots.map(({ sales, transactions, ...lot }) => {
-    const soldKg = round2(sales.reduce((s, x) => s + num(x.quantityKg), 0));
-    const deliveredKg = round2(sales.filter((x) => x.deliveryStatus === 'ENTREGUE').reduce((s, x) => s + num(x.quantityKg), 0));
+    const soldKg = round2(sales.reduce((s, x) => s + num(x.quantity), 0));
+    const deliveredKg = round2(sales.filter((x) => x.deliveryStatus === 'ENTREGUE').reduce((s, x) => s + num(x.quantity), 0));
     const revenue = round2(sales.reduce((s, x) => s + num(x.total), 0));
     const cost = round2(transactions.filter((t) => t.type === 'SAIDA').reduce((s, t) => s + num(t.amount), 0));
     const qty = lot.quantityKg == null ? null : num(lot.quantityKg);

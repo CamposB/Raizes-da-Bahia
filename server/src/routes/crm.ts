@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { num, prisma, round2 } from '../db.js';
-import { getSetting, paymentInfo } from '../services.js';
+import { defaultProduct, paymentInfo, sumQty } from '../services.js';
 import {
   DEFAULT_TEMPLATES,
   TEMPLATE_VARIABLES,
@@ -30,7 +30,7 @@ async function buildCustomers(days: number) {
   const customers = await prisma.customer.findMany({
     where: { active: true },
     include: {
-      sales: { where: { deliveryStatus: { not: 'CANCELADO' } }, include: { payments: true }, orderBy: { date: 'asc' } },
+      sales: { where: { deliveryStatus: { not: 'CANCELADO' } }, include: { payments: true, product: { select: { unit: true } } }, orderBy: { date: 'asc' } },
       contacts: { orderBy: { sentAt: 'desc' }, take: 1 },
     },
   });
@@ -53,7 +53,7 @@ async function buildCustomers(days: number) {
       whatsapp: normalizePhone(c.phone),
       optOut: c.optOut,
       purchases: sales.length,
-      totalKg: round2(sales.reduce((s, x) => s + num(x.quantityKg), 0)),
+      totalKg: sumQty(sales).kg,
       totalSpent: round2(sales.reduce((s, x) => s + num(x.total), 0)),
       openBalance: round2(sales.reduce((s, x) => s + paymentInfo(x).open, 0)),
       firstPurchase: first,
@@ -126,7 +126,7 @@ crmRouter.post('/preview', async (req, res) => {
       include: { sales: { where: { deliveryStatus: { not: 'CANCELADO' } }, include: { payments: true }, orderBy: { date: 'desc' } } },
     }),
     templateId ? prisma.messageTemplate.findUniqueOrThrow({ where: { id: templateId } }) : null,
-    getSetting('pricePerKg', '21'),
+    defaultProduct().then((p) => p.price),
   ]);
   const last = customer.sales[0]?.date ?? null;
   const text = renderTemplate(body ?? template?.body ?? '', {

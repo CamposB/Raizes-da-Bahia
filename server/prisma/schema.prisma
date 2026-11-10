@@ -23,6 +23,11 @@ enum TransactionType {
   SAIDA
 }
 
+enum ProductUnit {
+  KG
+  UN
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -107,6 +112,21 @@ model ContactLog {
   @@index([status, scheduledAt])
 }
 
+// Produto vendido (ex.: goma de tapioca por kg, provolone 300 g por unidade)
+model Product {
+  id        String      @id @default(cuid())
+  name      String
+  unit      ProductUnit @default(KG)
+  price     Decimal     @db.Decimal(12, 2) // preço padrão por kg ou por unidade
+  usesLots  Boolean     @default(false) // as vendas são ligadas a um lote (goma)
+  active    Boolean     @default(true)
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  sales Sale[]
+}
+
 // Lote de goma comprado do fornecedor (ex.: LO-20260519)
 model Lot {
   id           String   @id @default(cuid())
@@ -129,7 +149,9 @@ model Sale {
   date           DateTime       @db.Date
   customerId     String
   customer       Customer       @relation(fields: [customerId], references: [id])
-  quantityKg     Decimal        @db.Decimal(10, 3)
+  productId      String
+  product        Product        @relation(fields: [productId], references: [id])
+  quantity       Decimal        @map("quantityKg") @db.Decimal(10, 3) // kg ou unidades, conforme o produto
   unitPrice      Decimal        @db.Decimal(12, 2)
   total          Decimal        @db.Decimal(12, 2)
   deliveryStatus DeliveryStatus @default(PENDENTE)
@@ -147,6 +169,7 @@ model Sale {
 
   @@index([date])
   @@index([customerId])
+  @@index([productId])
 }
 
 // Lançamento do livro-caixa (aba Financeiro)

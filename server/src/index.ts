@@ -15,6 +15,7 @@ import { paymentsRouter, salesRouter } from './routes/sales.js';
 import { transactionsRouter } from './routes/transactions.js';
 import { dashboardRouter, settingsRouter } from './routes/dashboard.js';
 import { crmRouter } from './routes/crm.js';
+import { productsRouter } from './routes/products.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -34,6 +35,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/customers', requireAuth, customersRouter);
 app.use('/api/lots', requireAuth, lotsRouter);
+app.use('/api/products', requireAuth, productsRouter);
 app.use('/api/sales', requireAuth, salesRouter);
 app.use('/api/payments', requireAuth, paymentsRouter);
 app.use('/api/transactions', requireAuth, transactionsRouter);

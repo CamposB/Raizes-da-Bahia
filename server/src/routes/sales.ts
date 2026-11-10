@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { num, prisma, round2, toDate, today } from '../db.js';
-import { allocatePayment, paymentInfo } from '../services.js';
+import { allocatePayment, defaultProduct, paymentInfo, sumQty } from '../services.js';
 
 export const salesRouter = Router();
 
@@ -10,7 +10,8 @@ const saleInput = z.object({
   date: z.string(),
   customerId: z.string().optional(),
   newCustomerName: z.string().trim().min(1).optional(),
-  quantityKg: z.number().positive(),
+  productId: z.string().optional(), // se omitido: produto padrão
+  quantity: z.number().positive(),
   unitPrice: z.number().nonnegative(),
   total: z.number().nonnegative().optional(), // se omitido: qtd x preço
   lotId: z.string().nullish(),
@@ -25,18 +26,20 @@ const saleInput = z.object({
 
 const include = {
   customer: { select: { id: true, name: true, group: true } },
+  product: { select: { id: true, name: true, unit: true } },
   lot: { select: { id: true, code: true } },
   payments: { include: { transaction: { select: { id: true, number: true, date: true, paymentMethod: true } } } },
 } satisfies Prisma.SaleInclude;
 
 salesRouter.get('/', async (req, res) => {
-  const { status, payment, customerId, lotId, from, to, q } = req.query as Record<string, string | undefined>;
+  const { status, payment, customerId, productId, lotId, from, to, q } = req.query as Record<string, string | undefined>;
   const where: Prisma.SaleWhereInput = {
     ...(status ? { deliveryStatus: status as any } : {}),
     ...(customerId ? { customerId } : {}),
+    ...(productId ? { productId } : {}),
     ...(lotId ? { lotId } : {}),
     ...(from || to ? { date: { ...(from ? { gte: toDate(from) } : {}), ...(to ? { lte: toDate(to) } : {}) } } : {}),
-    ...(q ? { OR: [{ customer: { name: { contains: q } } }, { notes: { contains: q } }] } : {}),
+    ...(q ? { OR: [{ customer: { name: { contains: q } } }, { product: { name: { contains: q } } }, { notes: { contains: q } }] } : {}),
   };
   const sales = await prisma.sale.findMany({ where, include, orderBy: [{ date: 'desc' }, { number: 'desc' }] });
   let rows = sales.map((s) => ({ ...s, ...paymentInfo(s) }));
@@ -48,7 +51,7 @@ salesRouter.get('/', async (req, res) => {
     rows,
     summary: {
       count: active.length,
-      kg: round2(active.reduce((s, r) => s + num(r.quantityKg), 0)),
+      ...sumQty(active),
       total: round2(active.reduce((s, r) => s + num(r.total), 0)),
       open: round2(active.reduce((s, r) => s + r.open, 0)),
     },
@@ -63,15 +66,17 @@ salesRouter.get('/:id', async (req, res) => {
 salesRouter.post('/', async (req, res) => {
   const d = saleInput.parse(req.body);
   if (!d.customerId && !d.newCustomerName) return res.status(400).json({ error: 'Informe o cliente' });
-  const total = d.total ?? round2(d.quantityKg * d.unitPrice);
+  const total = d.total ?? round2(d.quantity * d.unitPrice);
 
   const sale = await prisma.$transaction(async (db) => {
     const customerId = d.customerId ?? (await db.customer.create({ data: { name: d.newCustomerName! } })).id;
+    const productId = d.productId ?? (await defaultProduct(db)).id;
     const sale = await db.sale.create({
       data: {
         date: toDate(d.date),
         customerId,
-        quantityKg: d.quantityKg,
+        productId,
+        quantity: d.quantity,
         unitPrice: d.unitPrice,
         total,
         lotId: d.lotId || null,
@@ -107,17 +112,18 @@ salesRouter.post('/', async (req, res) => {
 salesRouter.patch('/:id', async (req, res) => {
   const d = saleInput.omit({ paidNow: true, newCustomerName: true }).partial().parse(req.body);
   const current = await prisma.sale.findUniqueOrThrow({ where: { id: req.params.id } });
-  const quantityKg = d.quantityKg ?? num(current.quantityKg);
+  const quantity = d.quantity ?? num(current.quantity);
   const unitPrice = d.unitPrice ?? num(current.unitPrice);
   const total =
-    d.total ?? (d.quantityKg != null || d.unitPrice != null ? round2(quantityKg * unitPrice) : num(current.total));
+    d.total ?? (d.quantity != null || d.unitPrice != null ? round2(quantity * unitPrice) : num(current.total));
   const status = d.deliveryStatus ?? current.deliveryStatus;
   const sale = await prisma.sale.update({
     where: { id: req.params.id },
     data: {
       ...(d.date ? { date: toDate(d.date) } : {}),
       ...(d.customerId ? { customerId: d.customerId } : {}),
-      quantityKg,
+      ...(d.productId ? { productId: d.productId } : {}),
+      quantity,
       unitPrice,
       total,
       ...(d.lotId !== undefined ? { lotId: d.lotId || null } : {}),

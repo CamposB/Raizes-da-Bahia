@@ -12,7 +12,7 @@ import { SalesPage } from './pages/Sales';
 import { CustomerDetailPage, CustomersPage } from './pages/Customers';
 import { LotsPage } from './pages/Lots';
 import { FinancePage } from './pages/Finance';
-import { SettingsPage, UsersPage } from './pages/Admin';
+import { ProductsPage, SettingsPage, UsersPage } from './pages/Admin';
 import { CrmPage } from './pages/Crm';
 
 const queryClient = new QueryClient({
@@ -46,6 +46,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="crm" element={<CrmPage />} />
                 <Route path="lotes" element={<LotsPage />} />
                 <Route path="financeiro" element={<FinancePage />} />
+                <Route path="produtos" element={<AdminOnly><ProductsPage /></AdminOnly>} />
                 <Route path="usuarios" element={<AdminOnly><UsersPage /></AdminOnly>} />
                 <Route path="configuracoes" element={<SettingsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

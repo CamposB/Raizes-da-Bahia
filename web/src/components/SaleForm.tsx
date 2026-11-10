@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Minus, Plus } from 'lucide-react';
-import { api, type Customer, type Lot, type Sale } from '../api';
-import { money, todayISO } from '../format';
+import { api, type Customer, type Lot, type Product, type Sale } from '../api';
+import { money, qtyFmt, todayISO } from '../format';
 import { Button, ErrorMsg, Field, Input, Modal, Segmented, Select, Textarea } from './ui';
 
 export function useInvalidateAll() {
@@ -53,15 +53,17 @@ export function CustomerPicker({ value, onChange }: { value: { id?: string; name
 
 export function SaleFormModal({ open, onClose, sale, onSaved }: { open: boolean; onClose: () => void; sale?: Sale; onSaved?: () => void }) {
   const invalidate = useInvalidateAll();
-  const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api<Record<string, string>>('/settings') });
+  const { data: products = [] } = useQuery({ queryKey: ['products'], queryFn: () => api<Product[]>('/products') });
   const { data: lots = [] } = useQuery({ queryKey: ['lots'], queryFn: () => api<Lot[]>('/lots') });
   const openLots = useMemo(() => lots.filter((l) => !l.closed || l.id === sale?.lotId), [lots, sale]);
+  const activeProducts = useMemo(() => products.filter((p) => p.active || p.id === sale?.productId), [products, sale]);
 
   const [f, setF] = useState({
     date: todayISO(),
     customer: { name: '' } as { id?: string; name: string },
-    quantityKg: 1,
-    unitPrice: 21,
+    productId: '',
+    quantity: 1,
+    unitPrice: 0,
     customTotal: '' as string,
     lotId: '',
     deliveryStatus: 'PENDENTE' as Sale['deliveryStatus'],
@@ -76,9 +78,10 @@ export function SaleFormModal({ open, onClose, sale, onSaved }: { open: boolean;
       setF({
         date: sale.date.slice(0, 10),
         customer: { id: sale.customer.id, name: sale.customer.name },
-        quantityKg: sale.quantityKg,
+        productId: sale.productId,
+        quantity: sale.quantity,
         unitPrice: sale.unitPrice,
-        customTotal: Math.abs(sale.total - sale.quantityKg * sale.unitPrice) > 0.009 ? String(sale.total) : '',
+        customTotal: Math.abs(sale.total - sale.quantity * sale.unitPrice) > 0.009 ? String(sale.total) : '',
         lotId: sale.lotId ?? '',
         deliveryStatus: sale.deliveryStatus,
         notes: sale.notes ?? '',
@@ -90,8 +93,9 @@ export function SaleFormModal({ open, onClose, sale, onSaved }: { open: boolean;
         ...p,
         date: todayISO(),
         customer: { id: undefined, name: '' },
-        quantityKg: 1,
-        unitPrice: Number(settings?.pricePerKg ?? 21),
+        productId: activeProducts[0]?.id ?? '',
+        quantity: 1,
+        unitPrice: activeProducts[0]?.price ?? 0,
         customTotal: '',
         lotId: openLots[0]?.id ?? '',
         deliveryStatus: 'PENDENTE',
@@ -102,25 +106,35 @@ export function SaleFormModal({ open, onClose, sale, onSaved }: { open: boolean;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, sale?.id]);
 
-  // dados que chegam depois de abrir o formulário (preço padrão e lote atual)
+  // dados que chegam depois de abrir o formulário (produto padrão e lote atual)
   useEffect(() => {
-    if (open && !sale && settings) setF((p) => ({ ...p, unitPrice: Number(settings.pricePerKg) }));
-  }, [open, sale, settings]);
+    if (open && !sale && activeProducts[0]) setF((p) => (p.productId ? p : { ...p, productId: activeProducts[0].id, unitPrice: activeProducts[0].price }));
+  }, [open, sale, activeProducts]);
   useEffect(() => {
     if (open && !sale && openLots[0]) setF((p) => (p.lotId ? p : { ...p, lotId: openLots[0].id }));
   }, [open, sale, openLots]);
 
-  const total = f.customTotal !== '' ? Number(f.customTotal) : Math.round(f.quantityKg * f.unitPrice * 100) / 100;
+  const product = products.find((p) => p.id === f.productId);
+  const isKg = product?.unit !== 'UN';
+  const unitName = isKg ? 'kg' : 'unidade';
+  // ao trocar de produto, a quantidade volta para 1 e o preço passa a ser o do cadastro
+  const pickProduct = (id: string) => {
+    const p = products.find((x) => x.id === id);
+    setF((prev) => ({ ...prev, productId: id, quantity: 1, unitPrice: p?.price ?? prev.unitPrice, customTotal: '' }));
+  };
+
+  const total = f.customTotal !== '' ? Number(f.customTotal) : Math.round(f.quantity * f.unitPrice * 100) / 100;
 
   const save = useMutation({
     mutationFn: () => {
       const body = {
         date: f.date,
         ...(f.customer.id ? { customerId: f.customer.id } : { newCustomerName: f.customer.name.trim() }),
-        quantityKg: Number(f.quantityKg),
+        productId: f.productId,
+        quantity: Number(f.quantity),
         unitPrice: Number(f.unitPrice),
         ...(f.customTotal !== '' ? { total: Number(f.customTotal) } : {}),
-        lotId: f.lotId || null,
+        lotId: product?.usesLots ? f.lotId || null : null,
         deliveryStatus: f.deliveryStatus,
         notes: f.notes || null,
         ...(f.paidNow && !sale ? { paidNow: { method: f.method } } : {}),
@@ -155,19 +169,28 @@ export function SaleFormModal({ open, onClose, sale, onSaved }: { open: boolean;
         <Field label="Cliente">
           <CustomerPicker value={f.customer} onChange={(v) => set('customer', v)} />
         </Field>
+        <Field label="Produto">
+          {activeProducts.length <= 3 ? (
+            <Segmented value={f.productId} onChange={pickProduct} options={activeProducts.map((p) => ({ value: p.id, label: p.name }))} />
+          ) : (
+            <Select value={f.productId} onChange={(e) => pickProduct(e.target.value)} required>
+              {activeProducts.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </Select>
+          )}
+        </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Quantidade (kg)">
+          <Field label={isKg ? 'Quantidade (kg)' : 'Quantidade (un)'}>
             <div className="flex items-center gap-1">
-              <button type="button" className="rounded-lg border border-stone-300 p-2.5" onClick={() => set('quantityKg', Math.max(0.5, f.quantityKg - 1))} aria-label="Menos">
+              <button type="button" className="rounded-lg border border-stone-300 p-2.5" onClick={() => set('quantity', Math.max(isKg ? 0.5 : 1, f.quantity - 1))} aria-label="Menos">
                 <Minus size={16} />
               </button>
-              <Input type="number" step="0.001" min="0.001" inputMode="decimal" value={f.quantityKg} onChange={(e) => set('quantityKg', Number(e.target.value))} className="text-center" required />
-              <button type="button" className="rounded-lg border border-stone-300 p-2.5" onClick={() => set('quantityKg', f.quantityKg + 1)} aria-label="Mais">
+              <Input type="number" step={isKg ? '0.001' : '1'} min={isKg ? '0.001' : '1'} inputMode={isKg ? 'decimal' : 'numeric'} value={f.quantity} onChange={(e) => set('quantity', Number(e.target.value))} className="text-center" required />
+              <button type="button" className="rounded-lg border border-stone-300 p-2.5" onClick={() => set('quantity', f.quantity + 1)} aria-label="Mais">
                 <Plus size={16} />
               </button>
             </div>
           </Field>
-          <Field label="Preço por kg (R$)">
+          <Field label={`Preço por ${unitName} (R$)`}>
             <Input type="number" step="0.01" min="0" inputMode="decimal" value={f.unitPrice} onChange={(e) => set('unitPrice', Number(e.target.value))} required />
           </Field>
         </div>
@@ -185,14 +208,14 @@ export function SaleFormModal({ open, onClose, sale, onSaved }: { open: boolean;
           <Field label="Data">
             <Input type="date" value={f.date} onChange={(e) => set('date', e.target.value)} required />
           </Field>
-          <Field label="Lote">
+          {product?.usesLots && <Field label="Lote">
             <Select value={f.lotId} onChange={(e) => set('lotId', e.target.value)}>
               <option value="">— sem lote —</option>
               {openLots.map((l) => (
                 <option key={l.id} value={l.id}>{l.code}</option>
               ))}
             </Select>
-          </Field>
+          </Field>}
         </div>
         <Field label="Entrega">
           <Segmented
@@ -281,7 +304,7 @@ export function PaymentModal({ open, onClose, customerId, preselect }: { open: b
                     checked={selected.includes(s.id)}
                     onChange={(e) => setSelected((p) => (e.target.checked ? [...p, s.id] : p.filter((x) => x !== s.id)))}
                   />
-                  #{s.number} · {s.date.slice(8, 10)}/{s.date.slice(5, 7)} · {s.quantityKg} kg
+                  #{s.number} · {s.date.slice(8, 10)}/{s.date.slice(5, 7)} · {qtyFmt(s.quantity, s.product.unit)} {s.product.name}
                 </span>
                 <span className="font-medium">{money(s.open)}</span>
               </label>

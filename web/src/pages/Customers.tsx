@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, HandCoins, MessageCircle, Pencil, Plus, Search, Merge } from 'lucide-react';
 import { api, type Customer, type Sale, type Transaction } from '../api';
-import { dateFmt, kgFmt, money } from '../format';
+import { dateFmt, money, qtyFmt, qtySum } from '../format';
 import { Badge, Button, Card, DeliveryBadge, Empty, ErrorMsg, Field, Input, Modal, PageHeader, PaymentBadge, Select, Spinner, Stat, Textarea } from '../components/ui';
 import { PaymentModal, useInvalidateAll } from '../components/SaleForm';
 
@@ -39,7 +39,7 @@ export function CustomersPage() {
                   <div className="min-w-0">
                     <div className="truncate font-medium">{c.name}</div>
                     <div className="text-xs text-stone-500">
-                      {c.salesCount} compra(s) · {kgFmt(c.totalKg)} · última {dateFmt(c.lastPurchase)}
+                      {c.salesCount} compra(s) · {qtySum({ kg: c.totalKg ?? 0, un: c.totalUn })} · última {dateFmt(c.lastPurchase)}
                     </div>
                   </div>
                   {c.group && <Badge>{c.group}</Badge>}
@@ -124,7 +124,10 @@ export function CustomerDetailPage() {
   const valid = data.sales.filter((s) => s.deliveryStatus !== 'CANCELADO');
   const open = valid.reduce((s, x) => s + x.open, 0);
   const total = valid.reduce((s, x) => s + x.total, 0);
-  const kg = valid.reduce((s, x) => s + x.quantityKg, 0);
+  const qty = qtySum({
+    kg: valid.filter((s) => s.product.unit === 'KG').reduce((s, x) => s + x.quantity, 0),
+    un: valid.filter((s) => s.product.unit === 'UN').reduce((s, x) => s + x.quantity, 0),
+  });
   const phone = data.phone?.replace(/\D/g, '');
   const reminder = encodeURIComponent(`Olá ${data.name.split(' ')[0]}! Passando para lembrar do valor em aberto da tapioca: ${money(open)}. Obrigado! 🙂`);
 
@@ -149,7 +152,7 @@ export function CustomerDetailPage() {
 
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Comprou" value={money(total)} sub={`${valid.length} venda(s)`} />
-        <Stat label="Quantidade" value={kgFmt(kg)} />
+        <Stat label="Quantidade" value={qty} />
         <Stat label="Em aberto" value={money(open)} tone={open > 0 ? 'bad' : 'good'} />
       </div>
 
@@ -171,8 +174,8 @@ export function CustomerDetailPage() {
             {data.sales.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
                 <div>
-                  <div>#{s.number} · {dateFmt(s.date)} · {kgFmt(s.quantityKg)}</div>
-                  <div className="text-xs text-stone-500">{(s as any).lot?.code ?? 'sem lote'}{s.notes ? ` · ${s.notes}` : ''}</div>
+                  <div>#{s.number} · {dateFmt(s.date)} · {qtyFmt(s.quantity, s.product.unit)} {s.product.name}</div>
+                  {((s as any).lot || s.notes) && <div className="text-xs text-stone-500">{[(s as any).lot?.code, s.notes].filter(Boolean).join(' · ')}</div>}
                 </div>
                 <div className="flex items-center gap-2">
                   <DeliveryBadge status={s.deliveryStatus} />

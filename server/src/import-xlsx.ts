@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import { readFileSync } from 'node:fs';
 import type { DeliveryStatus } from '@prisma/client';
 import { prisma, round2 } from './db.js';
+import { defaultProduct } from './services.js';
 
 const file = process.argv.find((a) => /\.xlsx?$/i.test(a));
 const reset = process.argv.includes('--reset');
@@ -291,6 +292,7 @@ const txRows: TxRow[] = [];
 // ---------- gravação ----------
 // clientes são criados na ordem das vendas (assim os nomes "oficiais" vêm da aba de vendas)
 saleRows.sort((a, b) => a.date.getTime() - b.date.getTime() || a.order - b.order);
+const product = await defaultProduct();
 const saleRecords: { row: SaleRow; id: string; customerId: string; total: number }[] = [];
 for (const row of saleRows) {
   const customerId = (await customerFor(row.customer))!;
@@ -299,7 +301,8 @@ for (const row of saleRows) {
     data: {
       date: row.date,
       customerId,
-      quantityKg: row.qty,
+      productId: product.id,
+      quantity: row.qty,
       unitPrice: row.price,
       total: row.total,
       deliveryStatus: row.status,

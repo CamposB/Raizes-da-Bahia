@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Boxes, HeartHandshake, Home, LogOut, Menu, Monitor, Moon, Plus, Settings, ShoppingBasket, Sun, Users, UserCog, Wallet } from 'lucide-react';
+import { Boxes, HeartHandshake, Home, LogOut, Menu, Monitor, Moon, Package, Plus, Settings, ShoppingBasket, Sun, Users, UserCog, Wallet } from 'lucide-react';
 import { useAuth } from '../auth';
 import { useTheme, type ThemeMode } from '../theme';
 import { SaleFormModal } from './SaleForm';
@@ -47,7 +47,12 @@ export function Layout() {
   const [theme, setTheme] = useTheme();
   const navigate = useNavigate();
   const extra = [
-    ...(user?.role === 'ADMIN' ? [{ to: '/usuarios', label: 'Usuários', icon: UserCog }] : []),
+    ...(user?.role === 'ADMIN'
+      ? [
+          { to: '/produtos', label: 'Produtos', icon: Package },
+          { to: '/usuarios', label: 'Usuários', icon: UserCog },
+        ]
+      : []),
     { to: '/configuracoes', label: 'Configurações', icon: Settings },
   ];
 

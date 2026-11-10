@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, HandCoins, Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import { api, qs, type Lot, type Sale } from '../api';
-import { dateFmt, kgFmt, money } from '../format';
+import { api, qs, type Lot, type Product, type Sale } from '../api';
+import { dateFmt, money, qtyFmt, qtySum } from '../format';
 import { Button, Card, DeliveryBadge, Empty, Input, PageHeader, PaymentBadge, Select, Spinner } from '../components/ui';
 import { PaymentModal, SaleFormModal, useInvalidateAll } from '../components/SaleForm';
 
@@ -13,6 +13,7 @@ export function SalesPage() {
     q: params.get('q') ?? '',
     status: params.get('status') ?? '',
     payment: params.get('payment') ?? '',
+    productId: params.get('productId') ?? '',
     lotId: params.get('lotId') ?? '',
   };
   const setFilter = (k: string, v: string) => {
@@ -23,9 +24,10 @@ export function SalesPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['sales', filters],
-    queryFn: () => api<{ rows: Sale[]; summary: { count: number; kg: number; total: number; open: number } }>(`/sales${qs(filters)}`),
+    queryFn: () => api<{ rows: Sale[]; summary: { count: number; kg: number; un: number; total: number; open: number } }>(`/sales${qs(filters)}`),
   });
   const { data: lots = [] } = useQuery({ queryKey: ['lots'], queryFn: () => api<Lot[]>('/lots') });
+  const { data: products = [] } = useQuery({ queryKey: ['products'], queryFn: () => api<Product[]>('/products') });
 
   const [editing, setEditing] = useState<Sale | undefined>();
   const [creating, setCreating] = useState(false);
@@ -58,7 +60,7 @@ export function SalesPage() {
   return (
     <div>
       <PageHeader title="Vendas" actions={<Button onClick={() => setCreating(true)} className="hidden md:inline-flex"><Plus size={18} /> Nova venda</Button>}>
-        <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
           <div className="relative col-span-2 md:col-span-1">
             <Search size={16} className="absolute left-3 top-3 text-stone-400" />
             <Input placeholder="Buscar cliente…" value={filters.q} onChange={(e) => setFilter('q', e.target.value)} className="pl-9" />
@@ -74,7 +76,11 @@ export function SalesPage() {
             <option value="ABERTO">A receber</option>
             <option value="PAGO">Pagas</option>
           </Select>
-          <Select value={filters.lotId} onChange={(e) => setFilter('lotId', e.target.value)} className="col-span-2 md:col-span-1">
+          <Select value={filters.productId} onChange={(e) => setFilter('productId', e.target.value)}>
+            <option value="">Todos os produtos</option>
+            {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </Select>
+          <Select value={filters.lotId} onChange={(e) => setFilter('lotId', e.target.value)}>
             <option value="">Todos os lotes</option>
             {lots.map((l) => <option key={l.id} value={l.id}>{l.code}</option>)}
           </Select>
@@ -84,7 +90,7 @@ export function SalesPage() {
       {data && (
         <div className="mb-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-stone-600">
           <span><b>{data.summary.count}</b> vendas</span>
-          <span><b>{kgFmt(data.summary.kg)}</b></span>
+          <span><b>{qtySum(data.summary)}</b></span>
           <span>Total <b>{money(data.summary.total)}</b></span>
           {data.summary.open > 0 && <span className="text-red-600">A receber <b>{money(data.summary.open)}</b></span>}
         </div>
@@ -99,11 +105,11 @@ export function SalesPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <Link to={`/clientes/${s.customer.id}`} className="block truncate font-medium">{s.customer.name}</Link>
-                    <div className="text-xs text-stone-500">#{s.number} · {dateFmt(s.date)} · {s.lot?.code ?? 'sem lote'}</div>
+                    <div className="text-xs text-stone-500">#{s.number} · {dateFmt(s.date)} · {s.product.name}{s.lot ? ` · ${s.lot.code}` : ''}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-semibold tabular-nums">{money(s.total)}</div>
-                    <div className="text-xs text-stone-500">{kgFmt(s.quantityKg)}</div>
+                    <div className="text-xs text-stone-500">{qtyFmt(s.quantity, s.product.unit)}</div>
                   </div>
                 </div>
                 {s.notes && <div className="mt-1 text-xs italic text-stone-500">{s.notes}</div>}
@@ -121,7 +127,7 @@ export function SalesPage() {
               <thead className="border-b border-stone-200 text-left text-xs uppercase text-stone-500">
                 <tr>
                   <th className="px-4 py-3">#</th><th className="px-4 py-3">Data</th><th className="px-4 py-3">Cliente</th>
-                  <th className="px-4 py-3 text-right">Kg</th><th className="px-4 py-3 text-right">Preço/kg</th><th className="px-4 py-3 text-right">Total</th>
+                  <th className="px-4 py-3">Produto</th><th className="px-4 py-3 text-right">Qtd.</th><th className="px-4 py-3 text-right">Preço</th><th className="px-4 py-3 text-right">Total</th>
                   <th className="px-4 py-3">Lote</th><th className="px-4 py-3">Entrega</th><th className="px-4 py-3">Pagamento</th><th />
                 </tr>
               </thead>
@@ -134,7 +140,8 @@ export function SalesPage() {
                       <Link to={`/clientes/${s.customer.id}`} className="font-medium hover:text-brand-700">{s.customer.name}</Link>
                       {s.notes && <div className="text-xs text-stone-500">{s.notes}</div>}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums">{s.quantityKg}</td>
+                    <td className="px-4 py-2">{s.product.name}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-right tabular-nums">{qtyFmt(s.quantity, s.product.unit)}</td>
                     <td className="px-4 py-2 text-right tabular-nums">{money(s.unitPrice)}</td>
                     <td className="px-4 py-2 text-right font-medium tabular-nums">{money(s.total)}</td>
                     <td className="px-4 py-2 text-stone-500">{s.lot?.code ?? '—'}</td>

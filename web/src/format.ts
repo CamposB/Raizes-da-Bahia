@@ -20,3 +20,10 @@ export const todayISO = () => {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
+
+/** Quantidade com a unidade do produto: "1,5 kg" ou "2 un" */
+export const qtyFmt = (v: number | null | undefined, unit: 'KG' | 'UN') => (unit === 'KG' ? kgFmt(v) : `${kg.format(v ?? 0)} un`);
+
+/** Soma de kg e unidades, mostrando só o que existe: "3 kg · 2 un" */
+export const qtySum = ({ kg: k, un }: { kg: number; un?: number }) =>
+  [k || !un ? kgFmt(k) : '', un ? qtyFmt(un, 'UN') : ''].filter(Boolean).join(' · ');
