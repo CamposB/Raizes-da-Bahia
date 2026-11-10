@@ -1,4 +1,4 @@
-import { useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { X } from 'lucide-react';
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
@@ -148,6 +148,43 @@ export function Segmented<T extends string>({ value, onChange, options }: { valu
           {o.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+// ---- Confirmação ----
+// window.confirm() não funciona em alguns navegadores embutidos e apps instalados (retorna "não" na hora),
+// então a confirmação é feita com um modal próprio. Uso: if (await confirmDialog('Excluir?')) ...
+type ConfirmReq = { message: string; danger: boolean; resolve: (ok: boolean) => void };
+let pushConfirm: ((r: ConfirmReq) => void) | null = null;
+
+export const confirmDialog = (message: string, { danger = true } = {}) =>
+  new Promise<boolean>((resolve) => (pushConfirm ? pushConfirm({ message, danger, resolve }) : resolve(window.confirm(message))));
+
+/** Montado uma vez no app; mostra os pedidos de confirmDialog(). */
+export function ConfirmHost() {
+  const [req, setReq] = useState<ConfirmReq | null>(null);
+  useEffect(() => {
+    pushConfirm = setReq;
+    return () => { pushConfirm = null; };
+  }, []);
+  const close = (ok: boolean) => { req?.resolve(ok); setReq(null); };
+  useEffect(() => {
+    if (!req) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+  if (!req) return null;
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => close(false)}>
+      <div className="w-full max-w-sm rounded-2xl bg-surface p-5 shadow-xl" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+        <p className="text-sm text-stone-700">{req.message}</p>
+        <div className="mt-5 flex gap-2">
+          <Button variant="secondary" className="flex-1" onClick={() => close(false)}>Cancelar</Button>
+          <Button variant={req.danger ? 'danger' : 'primary'} className="flex-1" onClick={() => close(true)} autoFocus>Confirmar</Button>
+        </div>
+      </div>
     </div>
   );
 }

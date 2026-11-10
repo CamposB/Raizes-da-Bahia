@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { BellOff, Bot, MessageCircle, Pencil, PhoneCall, Plus, Search, Trash2 } from 'lucide-react';
 import { api, qs } from '../api';
 import { dateFmt, money } from '../format';
-import { Badge, Button, Card, Empty, ErrorMsg, Field, Input, Modal, PageHeader, Segmented, Select, Spinner, Stat, Textarea } from '../components/ui';
+import { Badge, Button, Card, confirmDialog, Empty, ErrorMsg, Field, Input, Modal, PageHeader, Segmented, Select, Spinner, Stat, Textarea } from '../components/ui';
 import { useInvalidateAll } from '../components/SaleForm';
 
 type Segment = 'ATIVO' | 'EM_RISCO' | 'INATIVO' | 'SEM_COMPRA';
@@ -249,7 +249,7 @@ function TemplatesTab() {
               <div className="font-semibold">{t.name} {!t.active && <Badge>Desativado</Badge>}</div>
               <div className="flex">
                 <button className="rounded-lg p-1.5 text-stone-500 hover:bg-stone-100" onClick={() => setEditing(t)} aria-label="Editar"><Pencil size={16} /></button>
-                <button className="rounded-lg p-1.5 text-stone-500 hover:bg-stone-100" onClick={() => confirm(`Excluir o modelo "${t.name}"?`) && remove.mutate(t.id)} aria-label="Excluir"><Trash2 size={16} /></button>
+                <button className="rounded-lg p-1.5 text-stone-500 hover:bg-stone-100" onClick={async () => (await confirmDialog(`Excluir o modelo "${t.name}"?`)) && remove.mutate(t.id)} aria-label="Excluir"><Trash2 size={16} /></button>
               </div>
             </div>
             <p className="whitespace-pre-wrap text-sm text-stone-600">{t.body}</p>
@@ -338,7 +338,7 @@ function HistoryTab() {
               {c.template && <div className="text-xs text-stone-500">Modelo: {c.template.name}</div>}
               {(c.message || c.notes) && <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-stone-600">{c.message ?? c.notes}</p>}
             </div>
-            <button className="self-start rounded-lg p-1.5 text-stone-400 hover:bg-stone-100" onClick={() => confirm('Excluir este registro?') && remove.mutate(c.id)} aria-label="Excluir"><Trash2 size={16} /></button>
+            <button className="self-start rounded-lg p-1.5 text-stone-400 hover:bg-stone-100" onClick={async () => (await confirmDialog('Excluir este registro?')) && remove.mutate(c.id)} aria-label="Excluir"><Trash2 size={16} /></button>
           </li>
         ))}
       </ul>

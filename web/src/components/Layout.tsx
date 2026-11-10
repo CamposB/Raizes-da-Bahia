@@ -4,6 +4,7 @@ import { Boxes, HeartHandshake, Home, LogOut, Menu, Monitor, Moon, Package, Plus
 import { useAuth } from '../auth';
 import { useTheme, type ThemeMode } from '../theme';
 import { SaleFormModal } from './SaleForm';
+import { ConfirmHost } from './ui';
 
 const themeOptions: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Claro', icon: Sun },
@@ -144,6 +145,7 @@ export function Layout() {
       </nav>
 
       <SaleFormModal open={newSale} onClose={() => setNewSale(false)} onSaved={() => navigate('/vendas')} />
+      <ConfirmHost />
     </div>
   );
 }

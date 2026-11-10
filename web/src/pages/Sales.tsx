@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, HandCoins, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { api, qs, type Lot, type Product, type Sale } from '../api';
 import { dateFmt, money, qtyFmt, qtySum } from '../format';
-import { Button, Card, DeliveryBadge, Empty, Input, PageHeader, PaymentBadge, Select, Spinner } from '../components/ui';
+import { Button, Card, confirmDialog, DeliveryBadge, Empty, ErrorMsg, Input, PageHeader, PaymentBadge, Select, Spinner } from '../components/ui';
 import { PaymentModal, SaleFormModal, useInvalidateAll } from '../components/SaleForm';
 
 export function SalesPage() {
@@ -42,8 +42,8 @@ export function SalesPage() {
     mutationFn: (s: Sale) => api(`/sales/${s.id}`, { method: 'DELETE' }),
     onSuccess: invalidate,
   });
-  const confirmRemove = (s: Sale) => {
-    if (confirm(`Excluir a venda #${s.number} de ${s.customer.name}? Os recebimentos continuam no financeiro.`)) remove.mutate(s);
+  const confirmRemove = async (s: Sale) => {
+    if (await confirmDialog(`Excluir a venda #${s.number} de ${s.customer.name}? Os recebimentos continuam no financeiro.`)) remove.mutate(s);
   };
 
   const Actions = ({ s }: { s: Sale }) => (
@@ -95,6 +95,8 @@ export function SalesPage() {
           {data.summary.open > 0 && <span className="text-red-600">A receber <b>{money(data.summary.open)}</b></span>}
         </div>
       )}
+
+      <div className="mb-3 empty:hidden"><ErrorMsg error={remove.error ?? deliver.error} /></div>
 
       {isLoading ? <Spinner /> : !data?.rows.length ? <Empty>Nenhuma venda encontrada.</Empty> : (
         <>

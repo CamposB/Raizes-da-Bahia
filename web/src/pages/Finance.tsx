@@ -3,7 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowDownCircle, ArrowUpCircle, Pencil, Plus, Trash2 } from 'lucide-react';
 import { api, qs, type Lot, type Transaction } from '../api';
 import { dateFmt, money, todayISO } from '../format';
-import { Badge, Button, Card, Empty, ErrorMsg, Field, Input, Modal, PageHeader, Segmented, Select, Spinner, Stat } from '../components/ui';
+import { Badge, Button, Card, confirmDialog, Empty, ErrorMsg, Field, Input, Modal, PageHeader, Segmented, Select, Spinner, Stat } from '../components/ui';
 import { CustomerPicker, useInvalidateAll } from '../components/SaleForm';
 import { IconBtn } from './Sales';
 
@@ -84,7 +84,7 @@ export function FinancePage() {
                 </span>
                 <div className="hidden shrink-0 md:flex">
                   <IconBtn title="Editar" onClick={() => setEditing(t)}><Pencil size={16} /></IconBtn>
-                  <IconBtn title="Excluir" onClick={() => confirm('Excluir este lançamento? Vendas ligadas a ele voltam a ficar em aberto.') && remove.mutate(t)}><Trash2 size={16} /></IconBtn>
+                  <IconBtn title="Excluir" onClick={async () => (await confirmDialog('Excluir este lançamento? Vendas ligadas a ele voltam a ficar em aberto.')) && remove.mutate(t)}><Trash2 size={16} /></IconBtn>
                 </div>
                 <button className="shrink-0 p-1 text-stone-400 md:hidden" onClick={() => setEditing(t)} aria-label="Editar"><Pencil size={16} /></button>
               </li>
@@ -173,7 +173,7 @@ function TransactionFormModal({ tx, onClose, onDelete }: { tx?: Transaction; onC
         <ErrorMsg error={save.error} />
         <div className="flex gap-2">
           {tx && (
-            <Button type="button" variant="secondary" onClick={() => { if (confirm('Excluir este lançamento?')) { onDelete(tx); onClose(); } }}>
+            <Button type="button" variant="secondary" onClick={async () => { if (await confirmDialog('Excluir este lançamento?')) { onDelete(tx); onClose(); } }}>
               <Trash2 size={16} />
             </Button>
           )}
